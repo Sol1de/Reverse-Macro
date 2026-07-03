@@ -23,20 +23,22 @@ pnpm ios            # expo run:ios
 pnpm android        # expo run:android
 pnpm web            # expo start --web
 pnpm lint           # expo lint (eslint-config-expo, flat config)
+pnpm test           # jest (jest-expo preset)
 pnpm db:generate    # drizzle-kit generate — regenerate SQL migration from db/schema.ts
 pnpm db:push        # drizzle-kit push — apply schema to the Postgres DB
 ```
 
-No test runner is installed yet. Ticket RM-5 ("Tests unitaires `generateReversePlan`") will introduce one — pick the runner when starting that task.
+Tests run on **jest** with the `jest-expo` preset (config in `package.json`, not a separate file). The `@/*` alias is mapped there via `moduleNameMapper`. Run a single file with `pnpm test lib/generate-reverse-plan.test.ts`, or a single case with `-t "<name>"`. Uses `@testing-library/react-native` for component tests.
 
 ## Environment variables
 
 Two distinct sets — do not conflate them:
 
 - `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — read by the app client at runtime in [lib/supabase.ts](lib/supabase.ts). `EXPO_PUBLIC_`-prefixed vars are bundled into the client, so only the publishable/anon key belongs here.
+- `KCAL_PER_GRAM_PROTEIN` / `KCAL_PER_GRAM_CARBS` / `KCAL_PER_GRAM_FAT` — macro→calorie conversion constants consumed by `generateReversePlan`. Not `EXPO_PUBLIC_`-prefixed.
 - `DATABASE_URL` — direct Postgres connection string, used **only** by drizzle-kit ([drizzle.config.ts](drizzle.config.ts)) for migrations. Never import this into app code.
 
-`.env` is gitignored; `.env.example` lists the required keys.
+All non-Supabase-client vars are accessed through [env.ts](env.ts) — a typed `Env` singleton that reads `process.env` and **throws at construction** if any required key is missing. Import `@/env` rather than touching `process.env` directly, and add new required vars to that class. `.env` is gitignored; `.env.example` lists the required keys.
 
 ## Architecture
 
@@ -45,9 +47,9 @@ Two distinct sets — do not conflate them:
 - `app/(auth)/` — unauthenticated zone: `sign-in`, `sign-up`.
 - `app/(app)/(tabs)/` — authenticated zone with a bottom tab bar: `my-plans`, `new-plan`, `account`. Plan detail is a separate screen reached from My plans.
 
-Session-based route guarding (redirect signed-out → `(auth)`, signed-in → `(app)`, persist across restarts) is **not yet implemented** — it's ticket RM-8. Session persistence itself is already wired: the Supabase client uses `AsyncStorage` and auto-refreshes on `AppState` foreground.
+**Session-based route guarding is implemented** (RM-8). [lib/auth-context.tsx](lib/auth-context.tsx) exposes a `SessionProvider` + `useSession()` hook wrapping `supabase.auth`; it holds `{ session, isLoading }` and subscribes to `onAuthStateChange`. [app/_layout.tsx](app/_layout.tsx) gates the two groups with `<Stack.Protected guard={...}>` and holds the native splash (`SplashScreen.preventAutoHideAsync`) until `isLoading` clears. [app/index.tsx](app/index.tsx) is the entry redirect (→ `my-plans` if signed in, else `sign-in`). Session persistence rides on the Supabase client's `AsyncStorage` + `AppState` auto-refresh.
 
-**The core domain logic is a pure function, `generateReversePlan`** (ticket RM-4, in progress — belongs in `lib/`). It takes current macros + target calories + duration + protein ratio and returns per-week daily quotas. It is UI-independent and the single source of truth for plan data. Critically: **the DB stores only the plan *parameters*; the detailed week-by-week table is recomputed client-side via `generateReversePlan` every time a plan opens.** Do not persist the expanded table.
+**The core domain logic is `generateReversePlan`** (RM-4, implemented in [lib/generate-reverse-plan.ts](lib/generate-reverse-plan.ts)). A thin functional wrapper over the `ReversePlanGenerator` class: given base macros + target calories + duration + protein ratio, it **linearly interpolates** weekly calories from base→target, holds protein at `proteinRatio`% of each week's kcal, and splits the remainder between carbs/fat by **preserving the base carb:fat kcal ratio** (defaults 50/50 when base is zero). Constructor validates inputs (finite, non-negative; ratio 0–100; integer weeks ≥ 1) and throws `RangeError`. It is UI-independent and the single source of truth for plan data. Critically: **the DB stores only the plan *parameters*; the week-by-week table is recomputed client-side every time a plan opens.** Do not persist the expanded table.
 
 **Data layer** is Drizzle ORM. [db/schema.ts](db/schema.ts) defines the `plans` table and its Row-Level-Security policies together, using the `drizzle-orm/supabase` helpers (`authUid`, `authenticatedRole`, `authUsers`). RLS is enabled and every policy scopes rows to `auth.uid() = user_id`, so a user only ever sees their own plans. Generated SQL lives in [drizzle/](drizzle/) — regenerate it with `pnpm db:generate` after editing the schema, never hand-edit migrations.
 
@@ -60,5 +62,7 @@ Note: app runtime talks to Supabase through `@supabase/supabase-js` (RLS-enforce
 - Path alias `@/*` maps to the repo root (e.g. `@/lib/supabase`, `@/hooks/use-color-scheme`).
 - File names are **kebab-case**, including components (`themed-text.tsx`, `use-color-scheme.ts`).
 - New Architecture, React Compiler, and typed routes are enabled in [app.json](app.json) — keep them working; avoid patterns incompatible with the React Compiler.
-- Theming goes through `constants/theme.ts` + the `use-color-scheme` / `use-theme-color` hooks. A shared design system (Button/Input/Card/Badge/Header) is planned in ticket RM-15; build reusable primitives there rather than styling ad hoc per screen.
+- **Styling is NativeWind v4 (Tailwind for RN) — use `className`, not ad-hoc `StyleSheet`.** Wired via `metro.config.js` (`withNativeWind`), `babel.config.js` (`jsxImportSource: 'nativewind'`), and `global.css` (imported once in `app/_layout.tsx`). Merge conditional classes with `cn()` from [lib/utils.ts](lib/utils.ts) (`clsx` + `tailwind-merge`).
+- **The design system is react-native-reusables** (shadcn-style, built on `@rn-primitives/*`). Primitives live in `components/ui/` (`button`, `card`, `input`, `label`, `text`, …); `components.json` configures the RNR/shadcn CLI (style `new-york`, aliases `@/components`, `@/lib/utils`). Reuse and extend these rather than restyling per screen. `<PortalHost />` is mounted in the root layout for overlay primitives.
+- **Colors are semantic HSL CSS variables**, not hardcoded hex: define/reference tokens like `bg-background`, `text-foreground`, `border-input` (see `tailwind.config.js` + the `:root` / `.dark:root` blocks in `global.css`). Dark mode is `class`-based, driven by the `use-color-scheme` hook and React Navigation's `ThemeProvider`. `constants/theme.ts` still feeds React Navigation's native theme.
 - Feature tickets reference **Figma node ids** (e.g. Plan detail `1:304`, New plan `1:78`). On the New plan screen, Figma labels read "Fat" everywhere — that's a placeholder; the real inputs are protein / carbs / fat.
