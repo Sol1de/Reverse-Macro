@@ -57,6 +57,12 @@ All non-Supabase-client vars are accessed through [env.ts](env.ts) — a typed `
 
 Note: app runtime talks to Supabase through `@supabase/supabase-js` (RLS-enforced, anon key). Drizzle/`postgres` are used for schema management only, not for app queries.
 
+**Server state is React Query** (`@tanstack/react-query`). Three layers, do not skip one:
+
+- [lib/plans-service.ts](lib/plans-service.ts) — `PlansService` class (singleton export `plansService`) wraps the Supabase `plans` table: `list`/`get`/`create`/`update`/`remove`. It is the **only** place that maps DB snake_case ⇄ app camelCase (`rowToPlan` / `inputToRow`), so `Plan` is `typeof plans.$inferSelect` (camelCase, `createdAt` as `Date`). `create` reads `auth.getUser()` and injects `user_id` itself — callers never pass it. Constructor takes an optional client for test injection.
+- [hooks/use-plans.ts](hooks/use-plans.ts) — the React Query hooks (`usePlans`, `usePlan`, `useCreatePlan`, `useUpdatePlan`, `useDeletePlan`) and the `planKeys` query-key factory. Mutations invalidate via `planKeys` — reuse the factory, don't hand-write key arrays. **Screens must consume these hooks, not `plansService` directly.** (The `(tabs)` screens don't consume them yet — they're the current wiring target.)
+- [lib/query-client.tsx](lib/query-client.tsx) — `QueryProvider` (mounted **outside** `SessionProvider` in the root layout) with `staleTime` 30s, `retry` 2, and RN `AppState`→`focusManager` refocus wiring.
+
 ## Conventions
 
 - Path alias `@/*` maps to the repo root (e.g. `@/lib/supabase`, `@/hooks/use-color-scheme`).

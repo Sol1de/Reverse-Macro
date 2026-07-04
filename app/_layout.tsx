@@ -9,6 +9,7 @@ import '@/global.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { SessionProvider, useSession } from '@/lib/auth-context';
+import { QueryProvider } from '@/lib/query-client';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,9 +44,11 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <SessionProvider>
-        <RootNavigator />
-      </SessionProvider>
+      <QueryProvider>
+        <SessionProvider>
+          <RootNavigator />
+        </SessionProvider>
+      </QueryProvider>
       <StatusBar style="auto" />
       <PortalHost />
     </ThemeProvider>
