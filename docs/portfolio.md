@@ -1,4 +1,4 @@
-# Fiche portfolio — ReverseMacro
+# Fiche portfolio
 
 > Planificateur de reverse diet mobile · Expo + Supabase
 
@@ -58,7 +58,7 @@ Choix de périmètre fort et **assumé** : l'app *génère* un plan, elle ne *jo
 
 | Domaine | Preuve dans ReverseMacro |
 |---|---|
-| **Cadrage** | MVP clair, périmètre assumé (pas de journal quotidien) — [scope.md](scope.md) |
+| **Cadrage** | MVP clair, périmètre assumé (pas de journal quotidien) |
 | **Navigation & écrans** | Zone Auth + 4 écrans app (Expo Router, typed routes) |
 | **État & données** | Session (Context) + plans (TanStack Query) + persistance Supabase |
 | **Brique avancée** | Auth + backend Supabase avec RLS |
@@ -77,18 +77,17 @@ MVP fonctionnel couvrant l'intégralité de la grille de compétences, livré av
 
 ## Captures d'écran
 
-> _À insérer :_ Connexion · Mes plans · Nouveau plan · Détail (tableau semaine par semaine) · Compte.
-
-| | | |
+| Connexion | Inscription | Mes plans |
 |---|---|---|
-| ![Connexion](../assets/screenshots/sign-in.png) | ![Mes plans](../assets/screenshots/my-plans.png) | ![Nouveau plan](../assets/screenshots/new-plan.png) |
-| ![Détail](../assets/screenshots/plan-detail.png) | ![Compte](../assets/screenshots/account.png) | |
+| ![Connexion](../assets/screenshots/sign-in.png) | ![Inscription](../assets/screenshots/sign-up.png) | ![Mes plans](../assets/screenshots/my-plans.png) |
+| **Nouveau plan** | **Détail — tableau semaine par semaine** | **Compte** |
+| ![Nouveau plan](../assets/screenshots/new-plan.png) | ![Détail](../assets/screenshots/plan-detail.png) | ![Compte](../assets/screenshots/account.png) |
 
 ---
 
 ## Liens
 
-- **Dépôt :** _‹URL du repo›_
+- **Dépôt :** [repo](https://github.com/Sol1de/Reverse-Macro)
 - **Cahier des charges :** [scope.md](scope.md)
 - **Plan de publication :** [publication-plan.md](publication-plan.md)
 - **Pitch :** [pitch.md](pitch.md)

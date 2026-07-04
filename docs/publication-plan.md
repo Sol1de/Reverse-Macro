@@ -25,7 +25,7 @@ Ce document couvre deux livrables :
 
 `.env` est **gitignored** → il n'est **pas** uploadé dans l'archive de build EAS. Les variables `EXPO_PUBLIC_*` (bundlées dans le client) doivent être déclarées comme **variables d'environnement EAS**, sinon le build produit une app sans URL Supabase ni constantes kcal.
 
-Variables requises côté client (cf. [AGENTS.md](../AGENTS.md) §Environment variables) :
+Variables requises côté client :
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`

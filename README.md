@@ -1,4 +1,4 @@
-# ReverseMacro 📈🍽️
+# ReverseMacro
 
 > Planificateur de **reverse diet** : à partir de tes macros actuelles, d'une cible calorique et d'une durée, l'app génère une montée progressive **semaine par semaine** (calories + protéines / glucides / lipides).
 
@@ -165,11 +165,10 @@ npx eas-cli build --platform android --profile production
 
 ## Documentation
 
-- **[Cahier des charges (scope)](docs/scope.md)** — MVP, périmètre, couverture de la grille de compétences.
-- **[Plan de publication](docs/publication-plan.md)** — build `.aab` + étapes Google Play (Voie A).
-- **[Fiche portfolio](docs/portfolio.md)** · **[Pitch](docs/pitch.md)**
-- **[AGENTS.md](AGENTS.md)** — architecture détaillée et conventions.
-- **[docs/knowledge/](docs/knowledge/)** — base de connaissances technique du cours.
+- **[Cahier des charges](docs/scope.md)**
+- **[Plan de publication](docs/publication-plan.md)**
+- **[Fiche portfolio](docs/portfolio.md)**
+- **[Pitch](docs/pitch.md)**
 
 ---
 
